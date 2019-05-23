@@ -4,8 +4,8 @@ import os
 import cv2
 import random
 import pickle
-TEST_DATA_PATH = "D:\\Hand_gesture_CNN\\ImageData\\test"
-TRAIN_DATA_PATH = "D:\\Hand_gesture_CNN\\ImageData\\train"
+TEST_DATA_PATH = "./ImageData/test"
+TRAIN_DATA_PATH = "./ImageData/train"
 CATEGORIES = ["hand","one","punch","right"]
 IMAGE_SIZE = 50
 TRAIN_DATA_PROCESS = 1
