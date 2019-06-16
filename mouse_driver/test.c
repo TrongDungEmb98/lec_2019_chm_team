@@ -9,67 +9,38 @@
  
 #define WR_VALUE _IOW('a','a',int32_t*)
 #define RD_VALUE _IOR('a','b',int32_t*)
-
+int rc, fd,i ;
 typedef struct params
 {
   int32_t dx,dy,env;
   
 }params;
- 
-int main()
+struct params data;
+int open_file(void)
 {
-        int rc, fd,i ;
-        struct params data;
-        data.dx = data.dy = data.env =0;
 
         fd = open("/dev/mousek", O_RDWR);
         if(fd < 0) {
                 printf("Cannot open device file...\n");
                 return 0;
         }
-        while(1) {
-        switch(rand() % 8) {
-        case 0:
-            data.dx = -1;
-            data.dy = 1;
-            break;
-        case 1:
-            data.dx = 1;
-            data.dy = 1;
-            break;
-        case 2:
-            data.dx = 1;
-            data.dy = -1;
-            break;
-        case 3:
-            data.dx = -1;
-            data.dy = -1;
-            break;
-        case 4:
-            data.dx = 1;
-            data.dy = 0;
-            break;
-        case 5:
-            data.dx = -1;
-            data.dy = 0;
-            break;
-        case 6:
-            data.dx = 0;
-            data.dy = 1;
-            break;
-        case 7:
-            data.dx = 0;
-            data.dy = -1;
-            break;            
-        }
-            for (i=0;i<rand()%100;i++){
-            rc = ioctl(fd, WR_VALUE, &data);
-            printf("ioctl(fd, WR_VALUE, move) = %d\n", rc);
-            usleep(15000);}
-       }
-        close(fd);
-
-        exit(0);
-
+return fd;	
+}
+void close_file(void)
+{
+	close(fd);
+	exit(0);
+	
+}
+void write_value(int32_t dx,int32_t dy,int32_t env)
+{
+	data.dx = dx;
+	data.dy = dy;
+	data.env = env;
+	rc = ioctl(fd, WR_VALUE, &data);
+        printf("ioctl(fd, WR_VALUE, move) = %d\n", rc);
+}
+int main()
+{       
 }
 
