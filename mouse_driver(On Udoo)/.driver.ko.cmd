@@ -1,0 +1,1 @@
+cmd_/home/udooer/LEC/driver.ko := ld -EL -r  -T /usr/src/linux-headers-3.14.56-udooneo/scripts/module-common.lds --build-id  -o /home/udooer/LEC/driver.ko /home/udooer/LEC/driver.o /home/udooer/LEC/driver.mod.o

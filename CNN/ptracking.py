@@ -9,7 +9,6 @@ import queue
 import ctypes as ct
 import pyautogui
 from Xlib import display
-import serialUtils
 
 frameSize = (320, 240)
 usingPiCamera = True
@@ -17,6 +16,8 @@ kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
 is_left_click = False
 is_right_click = False
 is_double_click = False
+is_left_click_up = False
+is_click_down = False
 IMAGE_SIZE = 50
 is_bgr_taken = False
 background = None
@@ -37,10 +38,8 @@ INDEX_OF_MAX_AREA_CONTOUR = 0
 qp = display.Display().screen().root.query_pointer()
 coordinateQueue = queue.Queue()
 coordinateQueue.put((qp.root_x, qp.root_y))
-#lib = ct.cdll.LoadLibrary('../mouse_driver/libtest.so')
-#lib.open_file()
-serialPort = serialUtils.getSerialPort()
-serial = serialUtils.serialInit(serialPort,7200)
+lib = ct.cdll.LoadLibrary('../mouse_driver/libtest.so')
+lib.open_file()
 cap = VideoStream(src=0, usePiCamera=usingPiCamera, resolution=frameSize,
         framerate=32).start()
 time.sleep(2.0)
@@ -101,7 +100,7 @@ def cvtCoordinateToScreenResolution(coordinate):
     widthRatio, heightRatio = getFrameRatio()
     X = coordinate[xPositionIndex] * widthRatio
     Y = coordinate[yPositionIndex] * widthRatio
-    #print("ratio: ",(widthRatio,heightRatio,X,Y))
+    print("ratio: ",(widthRatio,heightRatio,X,Y))
     return X, Y
 def getDxDy(coordinate):
     global coordinateQueue
@@ -110,7 +109,7 @@ def getDxDy(coordinate):
     deltaX = X - previousX
     deltaY = Y - previousY
     coordinateQueue.put((X,Y))
-    #print("toa do:",(X, Y, previousX, previousY))
+    print("toa do:",(X, Y, previousX, previousY))
     return deltaX,deltaY
 def handTracking(frame,img_dilation,model):
     maxAreaContour = None
@@ -197,82 +196,48 @@ def predictGesture(model,Roi):
     predict_pro = model.predict(Roi)
     return label[predict[0]],predict_pro[0][predict[0]]
 def checkClick():
-    global is_left_click,is_right_click,is_double_click,reviousEvent,presentEvent
-    if(previousEvent == "hand" and presentEvent == "one"):
+    global is_left_click_up,is_right_click,is_double_click,previousEvent,presentEvent, is_click_down
+    if(previousEvent == "one" and presentEvent == "punch"):
         is_double_click = True
-    elif(previousEvent == "one" and presentEvent == "hand"):
-        is_left_click = True
-    elif(previousEvent == "right" and presentEvent == "hand"):
-         is_right_click = True
+    elif(previousEvent == "right" and presentEvent == "punch"):
+        is_right_click = True
+    elif(presentEvent == "hand"):
+        is_left_click_up = True
+    elif(presentEvent == "punch"):
+        is_click_down = True
+
+        
 def mouseEvent(centroid):
-    global is_double_click,is_left_click,is_right_click, lib,data_dx_sign, data_dy_sign, data_dx, data_dy, data
+    global is_left_click_up,is_click_down,is_double_click, is_right_click, lib
     deltaX,deltaY = getDxDy(centroid)
-    data_dx = data_dy = data_dx_sign = data_dy_sign = " "
     if abs(deltaX) < 5:
         deltaX = 0
     if abs(deltaY) < 5:
         deltaY = 0
-    if (deltaX < 0):
-        data_dx_sign = "-"
-    elif (deltaX >=0) :
-        data_dx_sign = "+"
-    if (deltaY < 0):
-        data_dy_sign = "-"
-    elif (deltaY >=0) :
-        data_dy_sign = "+"
-    if (abs(deltaX) < 10):
-        data_dx = "00"+str(abs(deltaX))
-    elif(abs(deltaX) >=10 and abs(deltaX) <=99):
-        data_dx = "0"+str(abs(deltaX))
-    elif(abs(deltaX) >99 and abs(deltaX)<=999) :
-        data_dx = str(abs(deltaX))
-    else:
-        data_dx = "000"
-    if (abs(deltaY) < 10):
-        data_dy = "00"+str(abs(deltaY))
-    elif(abs(deltaY) >=10 and abs(deltaY) <=99):
-        data_dy = "0"+str(abs(deltaY))
-    elif(abs(deltaY) >99 and abs(deltaY)>=999) :
-        data_dy = str(abs(deltaY))
-    else:
-        data_dy = "000"
     if(is_double_click == True):
         print("(deltaX,deltaY)=",(0,0) ,"event: ","left double click")
-        #lib.write_value(0, 0, 1)
-        #lib.write_value(0, 0, 2)
-        #time.sleep(0.1)
-        #lib.write_value(0, 0, 1)
-        #lib.write_value(0, 0, 2)
-        data = data_dx_sign+data_dx +"/"+ data_dy_sign+data_dy+"/1"
-        serial.flushOutput()
-        serial.write(data.encode())
-        print(data)
+        lib.write_value(0, 0, 1)
+        lib.write_value(0, 0, 2)
+        time.sleep(0.1)
+        lib.write_value(0, 0, 1)
+        lib.write_value(0, 0, 2)
         is_double_click = False
-    elif(is_left_click == True):
-        print("(x,y)=",(0,0) ,"event: ","left single click")
-        #lib.write_value(0, 0, 1)
-        #lib.write_value(0, 0, 2)
-        data = data_dx_sign+data_dx +"/"+ data_dy_sign+data_dy+"/2"
-        serial.flushOutput()
-        serial.write(data.encode())
-        print(data)
-        is_left_click = False
     elif(is_right_click == True):
         print("(x,y)=",(0,0) ,"event: ","right click")
-        #lib.write_value(0, 0, 3)
-        #lib.write_value(0, 0, 4)
-        data = data_dx_sign+data_dx +"/"+ data_dy_sign+data_dy+"/3"
-        serial.flushOutput()
-        serial.write(data.encode())
-        print(data)
+        lib.write_value(0, 0, 3)
+        lib.write_value(0, 0, 4)
         is_right_click = False
+    elif(is_left_click_up == True):
+        print("(x,y)=",(0,0) ,"event: ","left single click up")
+        lib.write_value(deltaX, deltaY, 2)
+        is_left_click_up = False
+    elif(is_click_down == True):
+        print("(x,y)=",(0,0) ,"event: ","left single click down ")
+        lib.write_value(deltaX, deltaY, 1)
+        is_click_down = False
     else:
         print("(deltaX,deltaY)=",(deltaX,deltaY))
-        serial.flushOutput()
-        data = data_dx_sign+data_dx +"/"+ data_dy_sign+data_dy+"/0"
-        serial.write(data.encode())
-        print(data)
-        #lib.write_value(deltaX, deltaY, 0)
+        lib.write_value(deltaX, deltaY, 0)
 def main():
     global is_bgr_taken,background,previousEvent,presentEvent,is_left_click,is_right_click,is_double_click, lib
     #cap = cv2.VideoCapture(1)
@@ -309,14 +274,12 @@ def main():
         fps.update()
         fps.stop()
         #print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
-        #print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+        print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
     cap.stop()
-    #lib.close_file()
+    lib.close_file()
     cv2.destroyAllWindows()
+    lib.write_value(0, 0, 0)
     #countClickEvent.stop()
-    print("exitting.....")
-    time.sleep(1)
-    serial.close()
     exit()
 if __name__ == '__main__':
     main()
